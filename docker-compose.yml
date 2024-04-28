@@ -1,0 +1,41 @@
+version: "3.8" 
+services:
+  mqttdb:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: mqttdb
+    environment:
+      SA_PASSWORD: "Passw0rd!"
+      ACCEPT_EULA: "Y"
+    restart: always
+    volumes:
+       - sqlserver:/var/lib/mssql
+    ports:
+      - "1438:1433"
+    networks:
+      - mqttdocker
+
+
+  mqtt.api:
+    image: mcr.microsoft.com/dotnet/aspnet:6.0
+    build:
+      context: . 
+      dockerfile: IOT.api/Dockerfile
+    container_name: mqtt.api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - "ConnectionStrings:MyData=Server=mqttdb,1433;Initial Catalog=FablabIOT;User ID=sa;Password=Passw0rd!;TrustServerCertificate=True"
+    depends_on: 
+      - mqttdb
+    ports:
+      - "6002:80"
+    networks:
+      - mqttdocker
+    restart: always 
+volumes:
+  sqlserver:
+    name: sqlserver
+networks:
+   mqttdocker:
+       name: mqttdocker
+       driver: bridge
